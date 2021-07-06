@@ -36,6 +36,13 @@ func (l Logger) WithFields(fields ...string) Logger {
 	return l
 }
 
+func (l Logger) WithLogLevelSelector(s map[zapcore.Level]func(string, ...interface{})) Logger {
+	if s != nil {
+		l.logLevelSelector = s
+	}
+	return l
+}
+
 type KeyVal struct {
 	Key string
 	Val interface{}
@@ -50,7 +57,9 @@ func (l Logger) Log(ctx context.Context, level zapcore.Level, msg string, args .
 
 	finalArgs := append(l.extractArgs(ctx), argsI...)
 
-	l.logLevelSelector[level](msg, finalArgs...)
+	if logger, ok := l.logLevelSelector[level]; ok {
+		logger(msg, finalArgs...)
+	}
 }
 
 func (l Logger) extractArgs(ctx context.Context) []interface{} {
