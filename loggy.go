@@ -7,13 +7,13 @@ import (
 )
 
 type Logger struct {
-	zapLogger *zap.SugaredLogger
-	fields    []string
+	*zap.SugaredLogger
+	fields []string
 }
 
 func New(zapLogger *zap.SugaredLogger) Logger {
 	return Logger{
-		zapLogger: zapLogger,
+		SugaredLogger: zapLogger,
 	}
 }
 
@@ -36,7 +36,7 @@ func (l Logger) Log(ctx context.Context, msg string, args ...KeyVal) {
 	}
 
 	finalArgs := append(l.extractArgs(ctx), argsI...)
-	l.zapLogger.Infow(msg, finalArgs...)
+	l.Infow(msg, finalArgs...)
 }
 
 func (l Logger) extractArgs(ctx context.Context) []interface{} {
@@ -51,5 +51,5 @@ func (l Logger) extractArgs(ctx context.Context) []interface{} {
 }
 
 func (l Logger) Sync() error {
-	return l.zapLogger.Sync()
+	return l.SugaredLogger.Sync()
 }
