@@ -48,6 +48,7 @@ type KeyVal struct {
 	Val interface{}
 }
 
+// TODO: Instead wrap the zap.SugaredLogger methods, this is redundant
 func (l Logger) Log(ctx context.Context, level zapcore.Level, msg string, args ...KeyVal) {
 	argsI := make([]interface{}, 0, len(args)*2)
 
