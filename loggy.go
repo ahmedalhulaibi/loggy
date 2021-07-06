@@ -23,8 +23,19 @@ func (l Logger) WithFields(fields ...string) Logger {
 	return l
 }
 
-func (l Logger) Log(ctx context.Context, msg string, args ...interface{}) {
-	finalArgs := append(l.extractArgs(ctx), args...)
+type KeyVal struct {
+	key string
+	val interface{}
+}
+
+func (l Logger) Log(ctx context.Context, msg string, args ...KeyVal) {
+	argsI := make([]interface{}, 0, len(args)*2)
+
+	for _, kv := range args {
+		argsI = append(argsI, kv.key, kv.val)
+	}
+
+	finalArgs := append(l.extractArgs(ctx), argsI...)
 	l.zapLogger.Infow(msg, finalArgs...)
 }
 
