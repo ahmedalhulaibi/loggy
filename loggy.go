@@ -24,15 +24,15 @@ func (l Logger) WithFields(fields ...string) Logger {
 }
 
 type KeyVal struct {
-	key string
-	val interface{}
+	Key string
+	Val interface{}
 }
 
 func (l Logger) Log(ctx context.Context, msg string, args ...KeyVal) {
 	argsI := make([]interface{}, 0, len(args)*2)
 
 	for _, kv := range args {
-		argsI = append(argsI, kv.key, kv.val)
+		argsI = append(argsI, kv.Key, kv.Val)
 	}
 
 	finalArgs := append(l.extractArgs(ctx), argsI...)
