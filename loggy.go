@@ -4,16 +4,29 @@ import (
 	"context"
 
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 )
 
 type Logger struct {
 	*zap.SugaredLogger
-	fields []string
+	fields           []string
+	logLevelSelector map[zapcore.Level]func(msg string, keysAndValues ...interface{})
 }
 
 func New(zapLogger *zap.SugaredLogger) Logger {
+	logLevelSelector := map[zapcore.Level]func(msg string, keysAndValues ...interface{}){
+		zap.DebugLevel:  zapLogger.Debugw,
+		zap.InfoLevel:   zapLogger.Infow,
+		zap.WarnLevel:   zapLogger.Warnw,
+		zap.ErrorLevel:  zapLogger.Errorw,
+		zap.DPanicLevel: zapLogger.DPanicw,
+		zap.PanicLevel:  zapLogger.Panicw,
+		zap.FatalLevel:  zapLogger.Fatalw,
+	}
+
 	return Logger{
-		SugaredLogger: zapLogger,
+		SugaredLogger:    zapLogger,
+		logLevelSelector: logLevelSelector,
 	}
 }
 
@@ -28,7 +41,7 @@ type KeyVal struct {
 	Val interface{}
 }
 
-func (l Logger) Log(ctx context.Context, msg string, args ...KeyVal) {
+func (l Logger) Log(ctx context.Context, level zapcore.Level, msg string, args ...KeyVal) {
 	argsI := make([]interface{}, 0, len(args)*2)
 
 	for _, kv := range args {
@@ -36,7 +49,8 @@ func (l Logger) Log(ctx context.Context, msg string, args ...KeyVal) {
 	}
 
 	finalArgs := append(l.extractArgs(ctx), argsI...)
-	l.Infow(msg, finalArgs...)
+
+	l.logLevelSelector[level](msg, finalArgs...)
 }
 
 func (l Logger) extractArgs(ctx context.Context) []interface{} {
