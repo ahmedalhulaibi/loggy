@@ -6,7 +6,6 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
 )
 
 func TestExtractArgs(t *testing.T) {
@@ -50,7 +49,7 @@ func TestExtractArgs(t *testing.T) {
 			logger := New(sugaredLogger)
 			logger = logger.WithFields(tc.givenFields...)
 
-			actualArgs := logger.extractArgs(tc.givenCtx)
+			actualArgs := logger.extractArgsFromCtx(tc.givenCtx)
 			require.ElementsMatch(t, tc.expectedArgs, actualArgs)
 		})
 	}
@@ -102,72 +101,6 @@ func TestLogger_WithFields(t *testing.T) {
 			}
 			got := l.WithFields(tc.args.fields...)
 			require.Equal(t, tc.want, got)
-		})
-	}
-}
-
-func TestLogger_WithLogLevelSelector(t *testing.T) {
-	zapLogger := zap.NewNop().Sugar()
-	selector := map[zapcore.Level]func(msg string, keysAndValues ...interface{}){
-		zap.DebugLevel:  zapLogger.Debugw,
-		zap.InfoLevel:   zapLogger.Infow,
-		zap.WarnLevel:   zapLogger.Warnw,
-		zap.ErrorLevel:  zapLogger.Errorw,
-		zap.DPanicLevel: zapLogger.DPanicw,
-		zap.PanicLevel:  zapLogger.Panicw,
-		zap.FatalLevel:  zapLogger.Fatalw,
-	}
-
-	type fields struct {
-		SugaredLogger    *zap.SugaredLogger
-		fields           []string
-		logLevelSelector map[zapcore.Level]func(string, ...interface{})
-	}
-	type args struct {
-		logLevelSelector map[zapcore.Level]func(string, ...interface{})
-	}
-	tests := map[string]struct {
-		fields fields
-		args   args
-		want   Logger
-	}{
-		"Should return logger with same log level selector": {
-			fields: fields{
-				fields:           []string{"request_id", "user_id"},
-				SugaredLogger:    zapLogger,
-				logLevelSelector: selector,
-			},
-			args: args{logLevelSelector: nil},
-			want: Logger{
-				fields:           []string{"request_id", "user_id"},
-				SugaredLogger:    zapLogger,
-				logLevelSelector: selector,
-			},
-		},
-		"Should return logger with custom log level selector": {
-			fields: fields{
-				fields:           []string{"request_id", "user_id"},
-				SugaredLogger:    zapLogger,
-				logLevelSelector: make(map[zapcore.Level]func(string, ...interface{})),
-			},
-			args: args{logLevelSelector: selector},
-			want: Logger{
-				fields:           []string{"request_id", "user_id"},
-				SugaredLogger:    zapLogger,
-				logLevelSelector: selector,
-			},
-		},
-	}
-	for name, tc := range tests {
-		tc := tc
-		t.Run(name, func(t *testing.T) {
-			l := Logger{
-				SugaredLogger:    tc.fields.SugaredLogger,
-				fields:           tc.fields.fields,
-				logLevelSelector: tc.fields.logLevelSelector,
-			}
-			got := l.WithLogLevelSelector(tc.args.logLevelSelector)
-			require.Equal(t, tc.want.logLevelSelector, got.logLevelSelector)
 		})
 	}
 }
