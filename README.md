@@ -15,13 +15,13 @@ Typically in Go backend codebases, each request (HTTP, gRPC, etc.) has request-s
 
 This solves two issues:
 1. No need to inject a service dependency - logger - via `context.Context` which can lead to panics at runtime if implemented incorrectly
-2. No need to allocate a new logger with each request, which can give a marginal improvement in performance
+2. No need to allocate a new logger with each request
 
 To be clear, the issues above are not an issue with the logging libraries themselves, but an issue with the logging practices established.
 
 # Benchmarks
 
-A rudimentary benchmark shows that by changing how we actually consume logging libraries, we can improve performance marginally.
+A rudimentary benchmark shows that by changing how we actually consume logging libraries we incur a significant performance cost.
 
 ```
 go test -bench=. -benchtime=20s -benchmem
@@ -29,10 +29,10 @@ goos: darwin
 goarch: amd64
 pkg: github.com/ahmedalhulaibi/loggy
 cpu: Intel(R) Core(TM) i5-1038NG7 CPU @ 2.00GHz
-BenchmarkLoggy-8        96403204               255.3 ns/op           176 B/op          5 allocs/op
-BenchmarkZap-8          90905160               260.1 ns/op           280 B/op          4 allocs/op
+BenchmarkLoggy-8        12487059              1946 ns/op            1328 B/op         41 allocs/op
+BenchmarkZap-8          64357622               373.6 ns/op           280 B/op          4 allocs/op
 PASS
-ok      github.com/ahmedalhulaibi/loggy 48.912s
+ok      github.com/ahmedalhulaibi/loggy 50.900s
 ```
 
 ```go
@@ -52,6 +52,16 @@ func BenchmarkLoggy(b *testing.B) {
 		ctx := context.WithValue(context.Background(), LoggyCtxKey("request_id"), "<request-id-value>")
 
 		// Elsewhere in the codebase, the same instance of logger can be used and will extract request-scoped values from context.Context
+		// For the sake of the test, let's assume that we log ten times per request.
+		l.Infow(ctx, "something goes here", "key", "value")
+		l.Infow(ctx, "something goes here", "key", "value")
+		l.Infow(ctx, "something goes here", "key", "value")
+		l.Infow(ctx, "something goes here", "key", "value")
+		l.Infow(ctx, "something goes here", "key", "value")
+		l.Infow(ctx, "something goes here", "key", "value")
+		l.Infow(ctx, "something goes here", "key", "value")
+		l.Infow(ctx, "something goes here", "key", "value")
+		l.Infow(ctx, "something goes here", "key", "value")
 		l.Infow(ctx, "something goes here", "key", "value")
 	}
 }
@@ -70,6 +80,34 @@ func BenchmarkZap(b *testing.B) {
 
 		// Elsewhere in the codebase we can extract and use the specific request-scoped logger
 		// Typically this extract logic is wrapped in a helper e.g. logger(ctx).Infow but that is not relevant to this benchmark
+		// For the sake of the test, let's assume that we log ten times per request.
+		if maybeLogger, ok := ctx.Value("logger").(*zap.SugaredLogger); ok {
+			maybeLogger.Infow("something goes here", "key", "value")
+		}
+		if maybeLogger, ok := ctx.Value("logger").(*zap.SugaredLogger); ok {
+			maybeLogger.Infow("something goes here", "key", "value")
+		}
+		if maybeLogger, ok := ctx.Value("logger").(*zap.SugaredLogger); ok {
+			maybeLogger.Infow("something goes here", "key", "value")
+		}
+		if maybeLogger, ok := ctx.Value("logger").(*zap.SugaredLogger); ok {
+			maybeLogger.Infow("something goes here", "key", "value")
+		}
+		if maybeLogger, ok := ctx.Value("logger").(*zap.SugaredLogger); ok {
+			maybeLogger.Infow("something goes here", "key", "value")
+		}
+		if maybeLogger, ok := ctx.Value("logger").(*zap.SugaredLogger); ok {
+			maybeLogger.Infow("something goes here", "key", "value")
+		}
+		if maybeLogger, ok := ctx.Value("logger").(*zap.SugaredLogger); ok {
+			maybeLogger.Infow("something goes here", "key", "value")
+		}
+		if maybeLogger, ok := ctx.Value("logger").(*zap.SugaredLogger); ok {
+			maybeLogger.Infow("something goes here", "key", "value")
+		}
+		if maybeLogger, ok := ctx.Value("logger").(*zap.SugaredLogger); ok {
+			maybeLogger.Infow("something goes here", "key", "value")
+		}
 		if maybeLogger, ok := ctx.Value("logger").(*zap.SugaredLogger); ok {
 			maybeLogger.Infow("something goes here", "key", "value")
 		}

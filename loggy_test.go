@@ -297,6 +297,16 @@ func BenchmarkLoggy(b *testing.B) {
 		ctx := context.WithValue(context.Background(), LoggyCtxKey("request_id"), "<request-id-value>")
 
 		// Elsewhere in the codebase, the same instance of logger can be used and will extract request-scoped values from context.Context
+		// For the sake of the test, let's assume that we log ten times per request.
+		l.Infow(ctx, "something goes here", "key", "value")
+		l.Infow(ctx, "something goes here", "key", "value")
+		l.Infow(ctx, "something goes here", "key", "value")
+		l.Infow(ctx, "something goes here", "key", "value")
+		l.Infow(ctx, "something goes here", "key", "value")
+		l.Infow(ctx, "something goes here", "key", "value")
+		l.Infow(ctx, "something goes here", "key", "value")
+		l.Infow(ctx, "something goes here", "key", "value")
+		l.Infow(ctx, "something goes here", "key", "value")
 		l.Infow(ctx, "something goes here", "key", "value")
 	}
 }
@@ -315,6 +325,34 @@ func BenchmarkZap(b *testing.B) {
 
 		// Elsewhere in the codebase we can extract and use the specific request-scoped logger
 		// Typically this extract logic is wrapped in a helper e.g. logger(ctx).Infow but that is not relevant to this benchmark
+		// For the sake of the test, let's assume that we log ten times per request.
+		if maybeLogger, ok := ctx.Value("logger").(*zap.SugaredLogger); ok {
+			maybeLogger.Infow("something goes here", "key", "value")
+		}
+		if maybeLogger, ok := ctx.Value("logger").(*zap.SugaredLogger); ok {
+			maybeLogger.Infow("something goes here", "key", "value")
+		}
+		if maybeLogger, ok := ctx.Value("logger").(*zap.SugaredLogger); ok {
+			maybeLogger.Infow("something goes here", "key", "value")
+		}
+		if maybeLogger, ok := ctx.Value("logger").(*zap.SugaredLogger); ok {
+			maybeLogger.Infow("something goes here", "key", "value")
+		}
+		if maybeLogger, ok := ctx.Value("logger").(*zap.SugaredLogger); ok {
+			maybeLogger.Infow("something goes here", "key", "value")
+		}
+		if maybeLogger, ok := ctx.Value("logger").(*zap.SugaredLogger); ok {
+			maybeLogger.Infow("something goes here", "key", "value")
+		}
+		if maybeLogger, ok := ctx.Value("logger").(*zap.SugaredLogger); ok {
+			maybeLogger.Infow("something goes here", "key", "value")
+		}
+		if maybeLogger, ok := ctx.Value("logger").(*zap.SugaredLogger); ok {
+			maybeLogger.Infow("something goes here", "key", "value")
+		}
+		if maybeLogger, ok := ctx.Value("logger").(*zap.SugaredLogger); ok {
+			maybeLogger.Infow("something goes here", "key", "value")
+		}
 		if maybeLogger, ok := ctx.Value("logger").(*zap.SugaredLogger); ok {
 			maybeLogger.Infow("something goes here", "key", "value")
 		}
