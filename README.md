@@ -3,7 +3,7 @@
 `loggy.Logger` is an extension of `uber/zap` `zap.SugaredLogger`. This library has 2 goals:
 
 - To improve ergonomics of logging request-scoped values by accepting `context.Context`
-- To improve application performance by changing how logging is done in practice
+- To maintain or improve application performance by changing how logging is done in practice
 
 This library does not intend to improve performance of logging libraries themselves.
 
