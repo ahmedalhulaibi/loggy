@@ -21,7 +21,7 @@ To be clear, the issues above are not an issue with the logging libraries themse
 
 # Benchmarks
 
-A rudimentary benchmark shows that by changing how we actually consume logging libraries we incur a significant performance cost.
+A rudimentary benchmark shows that by changing how we actually consume logging libraries we incur a significant performance cost. The use case this library proposes is ~2.4x slower, consumes ~2.6x more memory and makes ~3x the allocations per operation.
 
 ```
 go test -bench=. -benchtime=20s -benchmem
@@ -29,10 +29,10 @@ goos: darwin
 goarch: amd64
 pkg: github.com/ahmedalhulaibi/loggy
 cpu: Intel(R) Core(TM) i5-1038NG7 CPU @ 2.00GHz
-BenchmarkLoggy-8        12487059              1946 ns/op            1328 B/op         41 allocs/op
-BenchmarkZap-8          64357622               373.6 ns/op           280 B/op          4 allocs/op
+BenchmarkLoggy-8        25110945               932.3 ns/op           744 B/op         13 allocs/op
+BenchmarkZap-8          63315307               387.2 ns/op           280 B/op          4 allocs/op
 PASS
-ok      github.com/ahmedalhulaibi/loggy 50.900s
+ok      github.com/ahmedalhulaibi/loggy 49.620s
 ```
 
 ```go
@@ -42,14 +42,14 @@ ok      github.com/ahmedalhulaibi/loggy 50.900s
 func BenchmarkLoggy(b *testing.B) {
 	// The Logger allocation is not included in the benchmark time since it is declared once at the beginning of the program
 	// It is expected that in the real world the Logger will be allocated once and reused across the application.
-	l := New(zap.NewNop().Sugar()).WithFields("request_id")
+	l := New(zap.NewNop().Sugar())
 
 	b.ReportAllocs()
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
 		// It is expected that context would still be modified in middleware with request-scoped values
-		ctx := context.WithValue(context.Background(), LoggyCtxKey("request_id"), "<request-id-value>")
+		ctx := ContextWithArgs(context.Background(), "request_id", "<request-id-value>")
 
 		// Elsewhere in the codebase, the same instance of logger can be used and will extract request-scoped values from context.Context
 		// For the sake of the test, let's assume that we log ten times per request.

@@ -14,7 +14,7 @@ import (
 
 func TestExtractArgs(t *testing.T) {
 	tests := map[string]struct {
-		givenFields  []LoggyCtxKey
+		givenFields  []interface{}
 		givenCtx     context.Context
 		expectedArgs []interface{}
 	}{
@@ -22,22 +22,18 @@ func TestExtractArgs(t *testing.T) {
 			givenCtx: context.Background(),
 		},
 		"Should return request_id field and value": {
-			givenFields:  []LoggyCtxKey{"request_id"},
-			givenCtx:     context.WithValue(context.Background(), LoggyCtxKey("request_id"), "<request-id-value>"),
+			givenCtx:     ContextWithArgs(context.Background(), "request_id", "<request-id-value>"),
 			expectedArgs: []interface{}{"request_id", "<request-id-value>"},
 		},
 		"Should return not return request_id field and value if not present": {
-			givenFields: []LoggyCtxKey{"request_id"},
-			givenCtx:    context.Background(),
+			givenCtx: context.Background(),
 		},
 		"Should return request_id field and value and user field and value": {
-			givenFields:  []LoggyCtxKey{"request_id", "user"},
-			givenCtx:     context.WithValue(context.WithValue(context.Background(), LoggyCtxKey("request_id"), "<request-id-value>"), LoggyCtxKey("user"), "<user-value>"),
+			givenCtx:     ContextWithArgs(context.Background(), "request_id", "<request-id-value>", "user", "<user-value>"),
 			expectedArgs: []interface{}{"request_id", "<request-id-value>", "user", "<user-value>"},
 		},
 		"Should only return user field and value if request_id not present": {
-			givenFields:  []LoggyCtxKey{"request_id", "user"},
-			givenCtx:     context.WithValue(context.Background(), LoggyCtxKey("user"), "<user-value>"),
+			givenCtx:     ContextWithArgs(context.Background(), "user", "<user-value>"),
 			expectedArgs: []interface{}{"user", "<user-value>"},
 		},
 	}
@@ -45,66 +41,8 @@ func TestExtractArgs(t *testing.T) {
 	for n, tc := range tests {
 		tc := tc
 		t.Run(n, func(t *testing.T) {
-			zaplogger, err := zap.NewProduction()
-			require.NoError(t, err)
-
-			sugaredLogger := zaplogger.Sugar()
-
-			logger := New(sugaredLogger)
-			logger = logger.WithFields(tc.givenFields...)
-
-			actualArgs := logger.extractArgsFromCtx(tc.givenCtx)
+			actualArgs := extractArgsFromCtx(tc.givenCtx)
 			require.ElementsMatch(t, tc.expectedArgs, actualArgs)
-		})
-	}
-}
-
-func TestLogger_WithFields(t *testing.T) {
-	nopLogger := zap.NewNop().Sugar()
-	type fields struct {
-		SugaredLogger *zap.SugaredLogger
-		fields        []LoggyCtxKey
-	}
-	type args struct {
-		fields []LoggyCtxKey
-	}
-	tests := map[string]struct {
-		fields fields
-		args   args
-		want   Logger
-	}{
-		"Should return logger with new fields appended": {
-			fields: fields{
-				fields:        []LoggyCtxKey{"request_id", "user_id"},
-				SugaredLogger: nopLogger,
-			},
-			args: args{fields: []LoggyCtxKey{"run_id"}},
-			want: Logger{
-				fields:        []LoggyCtxKey{"request_id", "user_id", "run_id"},
-				SugaredLogger: nopLogger,
-			},
-		},
-		"Should return logger with no new fields appended": {
-			fields: fields{
-				fields:        []LoggyCtxKey{"request_id", "user_id"},
-				SugaredLogger: nopLogger,
-			},
-			args: args{fields: []LoggyCtxKey{}},
-			want: Logger{
-				fields:        []LoggyCtxKey{"request_id", "user_id"},
-				SugaredLogger: nopLogger,
-			},
-		},
-	}
-	for name, tc := range tests {
-		tc := tc
-		t.Run(name, func(t *testing.T) {
-			l := Logger{
-				SugaredLogger: tc.fields.SugaredLogger,
-				fields:        tc.fields.fields,
-			}
-			got := l.WithFields(tc.args.fields...)
-			require.Equal(t, tc.want, got)
 		})
 	}
 }
@@ -140,9 +78,9 @@ func TestLogger_LogUntemplatedMessage(t *testing.T) {
 			buf := bytes.NewBuffer([]byte{})
 
 			zapLogger := newZapTestLogger(t, zapcore.AddSync(buf))
-			l := New(zapLogger.Sugar()).WithFields("request_id")
+			l := New(zapLogger.Sugar())
 
-			ctx := context.WithValue(context.Background(), LoggyCtxKey("request_id"), "<request-id-value>")
+			ctx := ContextWithArgs(context.Background(), "request_id", "<request-id-value>")
 			tc.logFunc(l, ctx, "something goes here")
 
 			if *updateGolden {
@@ -191,9 +129,9 @@ func TestLogger_LogTemplatedMessage(t *testing.T) {
 
 			zapLogger := newZapTestLogger(t, zapcore.AddSync(buf))
 
-			l := New(zapLogger.Sugar()).WithFields("request_id")
+			l := New(zapLogger.Sugar())
 
-			ctx := context.WithValue(context.Background(), LoggyCtxKey("request_id"), "<request-id-value>")
+			ctx := ContextWithArgs(context.Background(), "request_id", "<request-id-value>")
 
 			tc.logFunc(l, ctx, "something goes here %s", "here")
 
@@ -243,9 +181,9 @@ func TestLogger_LogMessageWithFields(t *testing.T) {
 
 			zapLogger := newZapTestLogger(t, zapcore.AddSync(buf))
 
-			l := New(zapLogger.Sugar()).WithFields("request_id")
+			l := New(zapLogger.Sugar())
 
-			ctx := context.WithValue(context.Background(), LoggyCtxKey("request_id"), "<request-id-value>")
+			ctx := ContextWithArgs(context.Background(), "request_id", "<request-id-value>")
 
 			tc.logFunc(l, ctx, "something goes here", "key", "value")
 
@@ -287,14 +225,14 @@ func newZapTestLogger(t *testing.T, output zapcore.WriteSyncer, options ...zap.O
 func BenchmarkLoggy(b *testing.B) {
 	// The Logger allocation is not included in the benchmark time since it is declared once at the beginning of the program
 	// It is expected that in the real world the Logger will be allocated once and reused across the application.
-	l := New(zap.NewNop().Sugar()).WithFields("request_id")
+	l := New(zap.NewNop().Sugar())
 
 	b.ReportAllocs()
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
 		// It is expected that context would still be modified in middleware with request-scoped values
-		ctx := context.WithValue(context.Background(), LoggyCtxKey("request_id"), "<request-id-value>")
+		ctx := ContextWithArgs(context.Background(), "request_id", "<request-id-value>")
 
 		// Elsewhere in the codebase, the same instance of logger can be used and will extract request-scoped values from context.Context
 		// For the sake of the test, let's assume that we log ten times per request.
