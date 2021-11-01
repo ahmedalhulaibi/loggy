@@ -293,7 +293,10 @@ func BenchmarkLoggy(b *testing.B) {
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
+		// It is expected that context would still be modified in middleware with request-scoped values
 		ctx := context.WithValue(context.Background(), "request_id", "<request-id-value>")
+
+		// Elsewhere in the codebase, the same instance of logger can be used and will extract request-scoped values from context.Context
 		l.Infow(ctx, "something goes here", "key", "value")
 	}
 }
@@ -307,8 +310,11 @@ func BenchmarkZap(b *testing.B) {
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		// Typically the zap logger is injected into context with request scoped fields in middleware and the logger is retrieved from the context.
+		// Typically the zap logger is injected into context with request-scoped fields in middleware
 		ctx := context.WithValue(context.Background(), "logger", l.With("request_id", "<request-id-value>"))
+
+		// Elsewhere in the codebase we can extract and use the specific request-scoped logger
+		// Typically this extract logic is wrapped in a helper e.g. logger(ctx).Infow but that is not relevant to this benchmark
 		if maybeLogger, ok := ctx.Value("logger").(*zap.SugaredLogger); ok {
 			maybeLogger.Infow("something goes here", "key", "value")
 		}
