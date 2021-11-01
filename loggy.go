@@ -6,7 +6,7 @@ import (
 	"go.uber.org/zap"
 )
 
-type LoggyCtxKey = string
+type LoggyCtxKey string
 
 // Logger is an extension of a zap.SugaredLogger
 // It is configured with a list of fields
@@ -158,7 +158,7 @@ func (l Logger) extractArgsFromCtx(ctx context.Context) []interface{} {
 	for _, field := range l.fields {
 		val := ctx.Value(field)
 		if val != nil {
-			ctxArgs = append(ctxArgs, field, val)
+			ctxArgs = append(ctxArgs, string(field), val)
 		}
 	}
 

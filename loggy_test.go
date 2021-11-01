@@ -23,7 +23,7 @@ func TestExtractArgs(t *testing.T) {
 		},
 		"Should return request_id field and value": {
 			givenFields:  []LoggyCtxKey{"request_id"},
-			givenCtx:     context.WithValue(context.Background(), "request_id", "<request-id-value>"),
+			givenCtx:     context.WithValue(context.Background(), LoggyCtxKey("request_id"), "<request-id-value>"),
 			expectedArgs: []interface{}{"request_id", "<request-id-value>"},
 		},
 		"Should return not return request_id field and value if not present": {
@@ -32,12 +32,12 @@ func TestExtractArgs(t *testing.T) {
 		},
 		"Should return request_id field and value and user field and value": {
 			givenFields:  []LoggyCtxKey{"request_id", "user"},
-			givenCtx:     context.WithValue(context.WithValue(context.Background(), "request_id", "<request-id-value>"), "user", "<user-value>"),
+			givenCtx:     context.WithValue(context.WithValue(context.Background(), LoggyCtxKey("request_id"), "<request-id-value>"), LoggyCtxKey("user"), "<user-value>"),
 			expectedArgs: []interface{}{"request_id", "<request-id-value>", "user", "<user-value>"},
 		},
 		"Should only return user field and value if request_id not present": {
 			givenFields:  []LoggyCtxKey{"request_id", "user"},
-			givenCtx:     context.WithValue(context.Background(), "user", "<user-value>"),
+			givenCtx:     context.WithValue(context.Background(), LoggyCtxKey("user"), "<user-value>"),
 			expectedArgs: []interface{}{"user", "<user-value>"},
 		},
 	}
@@ -142,7 +142,7 @@ func TestLogger_LogUntemplatedMessage(t *testing.T) {
 			zapLogger := newZapTestLogger(t, zapcore.AddSync(buf))
 			l := New(zapLogger.Sugar()).WithFields("request_id")
 
-			ctx := context.WithValue(context.Background(), "request_id", "<request-id-value>")
+			ctx := context.WithValue(context.Background(), LoggyCtxKey("request_id"), "<request-id-value>")
 			tc.logFunc(l, ctx, "something goes here")
 
 			if *updateGolden {
@@ -193,7 +193,7 @@ func TestLogger_LogTemplatedMessage(t *testing.T) {
 
 			l := New(zapLogger.Sugar()).WithFields("request_id")
 
-			ctx := context.WithValue(context.Background(), "request_id", "<request-id-value>")
+			ctx := context.WithValue(context.Background(), LoggyCtxKey("request_id"), "<request-id-value>")
 
 			tc.logFunc(l, ctx, "something goes here %s", "here")
 
@@ -245,7 +245,7 @@ func TestLogger_LogMessageWithFields(t *testing.T) {
 
 			l := New(zapLogger.Sugar()).WithFields("request_id")
 
-			ctx := context.WithValue(context.Background(), "request_id", "<request-id-value>")
+			ctx := context.WithValue(context.Background(), LoggyCtxKey("request_id"), "<request-id-value>")
 
 			tc.logFunc(l, ctx, "something goes here", "key", "value")
 
@@ -294,7 +294,7 @@ func BenchmarkLoggy(b *testing.B) {
 
 	for i := 0; i < b.N; i++ {
 		// It is expected that context would still be modified in middleware with request-scoped values
-		ctx := context.WithValue(context.Background(), "request_id", "<request-id-value>")
+		ctx := context.WithValue(context.Background(), LoggyCtxKey("request_id"), "<request-id-value>")
 
 		// Elsewhere in the codebase, the same instance of logger can be used and will extract request-scoped values from context.Context
 		l.Infow(ctx, "something goes here", "key", "value")

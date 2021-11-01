@@ -24,14 +24,15 @@ To be clear, the issues above are not an issue with the logging libraries themse
 A rudimentary benchmark shows that by changing how we actually consume logging libraries, we can improve performance marginally.
 
 ```
+go test -bench=. -benchtime=20s -benchmem
 goos: darwin
 goarch: amd64
 pkg: github.com/ahmedalhulaibi/loggy
 cpu: Intel(R) Core(TM) i5-1038NG7 CPU @ 2.00GHz
-BenchmarkLoggy-8        98274076               247.4 ns/op           176 B/op          5 allocs/op
-BenchmarkZap-8          92253990               269.1 ns/op           280 B/op          4 allocs/op
+BenchmarkLoggy-8        96403204               255.3 ns/op           176 B/op          5 allocs/op
+BenchmarkZap-8          90905160               260.1 ns/op           280 B/op          4 allocs/op
 PASS
-ok      github.com/ahmedalhulaibi/loggy 49.858s
+ok      github.com/ahmedalhulaibi/loggy 48.912s
 ```
 
 ```go
@@ -48,7 +49,7 @@ func BenchmarkLoggy(b *testing.B) {
 
 	for i := 0; i < b.N; i++ {
 		// It is expected that context would still be modified in middleware with request-scoped values
-		ctx := context.WithValue(context.Background(), "request_id", "<request-id-value>")
+		ctx := context.WithValue(context.Background(), LoggyCtxKey("request_id"), "<request-id-value>")
 
 		// Elsewhere in the codebase, the same instance of logger can be used and will extract request-scoped values from context.Context
 		l.Infow(ctx, "something goes here", "key", "value")
