@@ -12,41 +12,6 @@ import (
 	"go.uber.org/zap/zapcore"
 )
 
-func TestExtractArgs(t *testing.T) {
-	tests := map[string]struct {
-		givenFields  []interface{}
-		givenCtx     context.Context
-		expectedArgs []interface{}
-	}{
-		"Should return empty slice": {
-			givenCtx: context.Background(),
-		},
-		"Should return request_id field and value": {
-			givenCtx:     ContextWithArgs(context.Background(), "request_id", "<request-id-value>"),
-			expectedArgs: []interface{}{"request_id", "<request-id-value>"},
-		},
-		"Should return not return request_id field and value if not present": {
-			givenCtx: context.Background(),
-		},
-		"Should return request_id field and value and user field and value": {
-			givenCtx:     ContextWithArgs(context.Background(), "request_id", "<request-id-value>", "user", "<user-value>"),
-			expectedArgs: []interface{}{"request_id", "<request-id-value>", "user", "<user-value>"},
-		},
-		"Should only return user field and value if request_id not present": {
-			givenCtx:     ContextWithArgs(context.Background(), "user", "<user-value>"),
-			expectedArgs: []interface{}{"user", "<user-value>"},
-		},
-	}
-
-	for n, tc := range tests {
-		tc := tc
-		t.Run(n, func(t *testing.T) {
-			actualArgs := extractArgsFromCtx(tc.givenCtx)
-			require.ElementsMatch(t, tc.expectedArgs, actualArgs)
-		})
-	}
-}
-
 func TestLogger_LogUntemplatedMessage(t *testing.T) {
 	tests := map[string]struct {
 		logFunc func(Logger, context.Context, ...interface{})
@@ -80,7 +45,7 @@ func TestLogger_LogUntemplatedMessage(t *testing.T) {
 			zapLogger := newZapTestLogger(t, zapcore.AddSync(buf))
 			l := New(zapLogger.Sugar())
 
-			ctx := ContextWithArgs(context.Background(), "request_id", "<request-id-value>")
+			ctx := ContextWithLogger(context.Background(), l.WithFields("request_id", "<request-id-value>"))
 			tc.logFunc(l, ctx, "something goes here")
 
 			if *updateGolden {
@@ -131,7 +96,7 @@ func TestLogger_LogTemplatedMessage(t *testing.T) {
 
 			l := New(zapLogger.Sugar())
 
-			ctx := ContextWithArgs(context.Background(), "request_id", "<request-id-value>")
+			ctx := ContextWithLogger(context.Background(), l.WithFields("request_id", "<request-id-value>"))
 
 			tc.logFunc(l, ctx, "something goes here %s", "here")
 
@@ -183,7 +148,7 @@ func TestLogger_LogMessageWithFields(t *testing.T) {
 
 			l := New(zapLogger.Sugar())
 
-			ctx := ContextWithArgs(context.Background(), "request_id", "<request-id-value>")
+			ctx := ContextWithLogger(context.Background(), l.WithFields("request_id", "<request-id-value>"))
 
 			tc.logFunc(l, ctx, "something goes here", "key", "value")
 
@@ -232,7 +197,7 @@ func BenchmarkLoggy(b *testing.B) {
 
 	for i := 0; i < b.N; i++ {
 		// It is expected that context would still be modified in middleware with request-scoped values
-		ctx := ContextWithArgs(context.Background(), "request_id", "<request-id-value>")
+		ctx := ContextWithLogger(context.Background(), l.WithFields("request_id", "<request-id-value>"))
 
 		// Elsewhere in the codebase, the same instance of logger can be used and will extract request-scoped values from context.Context
 		// For the sake of the test, let's assume that we log ten times per request.
