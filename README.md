@@ -1,18 +1,27 @@
 # loggy
 
-`loggy.Logger` is an extension of `uber/zap` `zap.SugaredLogger`. `loggy.Logger` is designed to improve ergonomics of logging request-scoped values.
+`loggy.Logger` is an extension of `uber/zap` `zap.SugaredLogger`. This library has 2 goals:
 
-Typically in Go backend codebases, each request (HTTP, gRPC, etc.) has request-scoped values that are logged with each message. The way I have seen this implemented in many codebases is by extending the logging context using a method `log.With` or `log.WithFields` which returns a new logger instance. The new logger is injected into `context.Context`.
+- To improve ergonomics of logging request-scoped values by accepting `context.Context`
+- To improve application performance by changing how logging is done in practice
 
-`zap` with `loggy` changes the semantics slightly. Rather than creating a new request-scoped logger, the logger itself is configured to search for specific request-scoped values. `loggy.Logger` accepts `context.Context` and extracts request-scoped values directly from `context.Context`. If a field does not exist in `context.Context` it is ignored.
+This library does not intend to improve performance of logging libraries themselves.
+
+# Background
+
+Typically in Go backend codebases, each request (HTTP, gRPC, etc.) has request-scoped values that are logged with each message. The way I have seen this implemented in many codebases is by extending the logging context using a method `log.With` or `log.WithFields` which returns a new logger instance. The new logger is injected into `context.Context` and extracted further down the stack when ever logging is required.
+
+`loggy.Logger` changes the semantics slightly. Rather than creating a new request-scoped logger, `loggy.Logger` accepts `context.Context` and extracts request-scoped values directly from `context.Context`. 
 
 This solves two issues:
-1. No need to inject a service dependency - a logger - via `context.Context` which can lead to panics at runtime if implemented incorrectly
-2. No need to allocate a new logger with each request, which can have a marginal improvement in performance
+1. No need to inject a service dependency - logger - via `context.Context` which can lead to panics at runtime if implemented incorrectly
+2. No need to allocate a new logger with each request, which can give a marginal improvement in performance
 
 To be clear, the issues above are not an issue with the logging libraries themselves, but an issue with the logging practices established.
 
 # Benchmarks
+
+A rudimentary benchmark shows that by changing how we actually consume logging libraries, we can improve performance marginally.
 
 ```
 goos: darwin
@@ -66,3 +75,6 @@ func BenchmarkZap(b *testing.B) {
 	}
 }
 ```
+
+# TODO
+- [ ] Benchmark with HTTP examples - specifically benchmarking the middleware and `context.Context` injection use-case against the `loggy` way
