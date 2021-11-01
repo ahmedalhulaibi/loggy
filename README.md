@@ -1,8 +1,8 @@
 # loggy
 
-`loggy` is an extension of `uber/zap` sugared logger designed to improve ergonomics of logging request-scoped values.
+`loggy.Logger` is an extension of `uber/zap` `zap.SugaredLogger`. `loggy.Logger` is designed to improve ergonomics of logging request-scoped values.
 
-Typically in Go backend codebases, each request (HTTP, gRPC, etc.) has request-scoped values that are logged with each message. The way I have seen this implemented in many codebases is by extended the logging context using a method `log.With` or `log.WithFields` which returns a new logger instance. The new logger is injected into `context.Context`. Example below:
+Typically in Go backend codebases, each request (HTTP, gRPC, etc.) has request-scoped values that are logged with each message. The way I have seen this implemented in many codebases is by extending the logging context using a method `log.With` or `log.WithFields` which returns a new logger instance. The new logger is injected into `context.Context`.
 
 `zap` with `loggy` changes the semantics slightly. Rather than creating a new request-scoped logger, the logger itself is configured to search for specific request-scoped values. `loggy.Logger` accepts `context.Context` and extracts request-scoped values directly from `context.Context`. If a field does not exist in `context.Context` it is ignored.
 
