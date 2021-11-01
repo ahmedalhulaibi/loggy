@@ -212,25 +212,25 @@ func TestLogger_LogTemplatedMessage(t *testing.T) {
 
 func TestLogger_LogMessageWithFields(t *testing.T) {
 	tests := map[string]struct {
-		logFunc func(Logger, context.Context, string, ...KeyVal)
+		logFunc func(Logger, context.Context, string, ...interface{})
 	}{
 		"Should log with debug level": {
-			logFunc: func(l Logger, ctx context.Context, msg string, args ...KeyVal) {
+			logFunc: func(l Logger, ctx context.Context, msg string, args ...interface{}) {
 				l.Debugw(ctx, msg, args...)
 			},
 		},
 		"Should log with info level": {
-			logFunc: func(l Logger, ctx context.Context, msg string, args ...KeyVal) {
+			logFunc: func(l Logger, ctx context.Context, msg string, args ...interface{}) {
 				l.Infow(ctx, msg, args...)
 			},
 		},
 		"Should log with warn level": {
-			logFunc: func(l Logger, ctx context.Context, msg string, args ...KeyVal) {
+			logFunc: func(l Logger, ctx context.Context, msg string, args ...interface{}) {
 				l.Warnw(ctx, msg, args...)
 			},
 		},
 		"Should log with error level": {
-			logFunc: func(l Logger, ctx context.Context, msg string, args ...KeyVal) {
+			logFunc: func(l Logger, ctx context.Context, msg string, args ...interface{}) {
 				l.Errorw(ctx, msg, args...)
 			},
 		},
@@ -247,7 +247,7 @@ func TestLogger_LogMessageWithFields(t *testing.T) {
 
 			ctx := context.WithValue(context.Background(), "request_id", "<request-id-value>")
 
-			tc.logFunc(l, ctx, "something goes here", KeyVal{Key: "key", Val: "value"})
+			tc.logFunc(l, ctx, "something goes here", "key", "value")
 
 			if *updateGolden {
 				t.Log("Updating golden file:", goldenFilename(t))
@@ -279,4 +279,38 @@ func newZapTestLogger(t *testing.T, output zapcore.WriteSyncer, options ...zap.O
 	}
 	core := zapcore.NewCore(zapcore.NewJSONEncoder(encoderCfg), output, zap.DebugLevel)
 	return zap.New(core).WithOptions(options...)
+}
+
+// BenchmarkLoggy benchmarks the recommended usage of the Logger.
+// It is intended to be run with the -benchmem flag.
+// The recommended usage of the Logger is to use the WithFields and Infow, Debugw, etc. methods.
+func BenchmarkLoggy(b *testing.B) {
+	// The Logger allocation is not included in the benchmark time since it is declared once at the beginning of the program
+	// It is expected that in the real world the Logger will be allocated once and reused across the application.
+	l := New(zap.NewNop().Sugar()).WithFields("request_id")
+
+	b.ReportAllocs()
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		ctx := context.WithValue(context.Background(), "request_id", "<request-id-value>")
+		l.Infow(ctx, "something goes here", "key", "value")
+	}
+}
+
+// BenchmarkZap benchmarks the usage of the zap logger as it would be in the real world.
+// It is intended to be run with the -benchmem flag.
+func BenchmarkZap(b *testing.B) {
+	l := zap.NewNop().Sugar()
+
+	b.ReportAllocs()
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		// Typically the zap logger is injected into context with request scoped fields in middleware and the logger is retrieved from the context.
+		ctx := context.WithValue(context.Background(), "logger", l.With("request_id", "<request-id-value>"))
+		if maybeLogger, ok := ctx.Value("logger").(*zap.SugaredLogger); ok {
+			maybeLogger.Infow("something goes here", "key", "value")
+		}
+	}
 }

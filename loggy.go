@@ -118,63 +118,38 @@ func (l Logger) Fatalf(ctx context.Context, template string, args ...interface{}
 }
 
 // Debugw logs a message with some additional context.
-func (l Logger) Debugw(ctx context.Context, msg string, args ...KeyVal) {
-	finalArgs := append(l.extractArgsFromCtx(ctx), keyvals(args).toGenericSlice()...)
-	l.SugaredLogger.Debugw(msg, finalArgs...)
+func (l Logger) Debugw(ctx context.Context, msg string, args ...interface{}) {
+	l.SugaredLogger.Debugw(msg, append(l.extractArgsFromCtx(ctx), args...)...)
 }
 
 // Infow logs a message with some additional context.
-func (l Logger) Infow(ctx context.Context, msg string, args ...KeyVal) {
-	finalArgs := append(l.extractArgsFromCtx(ctx), keyvals(args).toGenericSlice()...)
-	l.SugaredLogger.Infow(msg, finalArgs...)
+func (l Logger) Infow(ctx context.Context, msg string, args ...interface{}) {
+	l.SugaredLogger.Infow(msg, append(l.extractArgsFromCtx(ctx), args...)...)
 }
 
 // Warnw logs a message with some additional context.
-func (l Logger) Warnw(ctx context.Context, msg string, args ...KeyVal) {
-	finalArgs := append(l.extractArgsFromCtx(ctx), keyvals(args).toGenericSlice()...)
-	l.SugaredLogger.Warnw(msg, finalArgs...)
+func (l Logger) Warnw(ctx context.Context, msg string, args ...interface{}) {
+	l.SugaredLogger.Warnw(msg, append(l.extractArgsFromCtx(ctx), args...)...)
 }
 
 // Errorw logs a message with some additional context.
-func (l Logger) Errorw(ctx context.Context, msg string, args ...KeyVal) {
-	finalArgs := append(l.extractArgsFromCtx(ctx), keyvals(args).toGenericSlice()...)
-	l.SugaredLogger.Errorw(msg, finalArgs...)
+func (l Logger) Errorw(ctx context.Context, msg string, args ...interface{}) {
+	l.SugaredLogger.Errorw(msg, append(l.extractArgsFromCtx(ctx), args...)...)
 }
 
 // DPanicw logs a message with some additional context. In development, the logger then panics. (See zapcore.DPanicLevel for details.)
-func (l Logger) DPanicw(ctx context.Context, msg string, args ...KeyVal) {
-	finalArgs := append(l.extractArgsFromCtx(ctx), keyvals(args).toGenericSlice()...)
-	l.SugaredLogger.DPanicw(msg, finalArgs...)
+func (l Logger) DPanicw(ctx context.Context, msg string, args ...interface{}) {
+	l.SugaredLogger.DPanicw(msg, append(l.extractArgsFromCtx(ctx), args...)...)
 }
 
 // Panicw logs a message with some additional context, then panics.
-func (l Logger) Panicw(ctx context.Context, msg string, args ...KeyVal) {
-	finalArgs := append(l.extractArgsFromCtx(ctx), keyvals(args).toGenericSlice()...)
-	l.SugaredLogger.Panicw(msg, finalArgs...)
+func (l Logger) Panicw(ctx context.Context, msg string, args ...interface{}) {
+	l.SugaredLogger.Panicw(msg, append(l.extractArgsFromCtx(ctx), args...)...)
 }
 
 // Fatalw logs a message with some additional context, then calls os.Exit.
-func (l Logger) Fatalw(ctx context.Context, msg string, args ...KeyVal) {
-	finalArgs := append(l.extractArgsFromCtx(ctx), keyvals(args).toGenericSlice()...)
-	l.SugaredLogger.Fatalw(msg, finalArgs...)
-}
-
-// KeyVal represents a key-value pair for a single log attribute
-type KeyVal struct {
-	Key string
-	Val interface{}
-}
-
-type keyvals []KeyVal
-
-func (kvs keyvals) toGenericSlice() []interface{} {
-	argsI := make([]interface{}, 0, len(kvs)*2)
-
-	for _, kv := range kvs {
-		argsI = append(argsI, kv.Key, kv.Val)
-	}
-
-	return argsI
+func (l Logger) Fatalw(ctx context.Context, msg string, args ...interface{}) {
+	l.SugaredLogger.Fatalw(msg, append(l.extractArgsFromCtx(ctx), args...)...)
 }
 
 func (l Logger) extractArgsFromCtx(ctx context.Context) []interface{} {
