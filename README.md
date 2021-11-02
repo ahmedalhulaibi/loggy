@@ -21,7 +21,7 @@ To be clear, the issues above are not an issue with the logging libraries themse
 
 # Benchmarks
 
-A rudimentary benchmark shows that by changing how we actually consume logging libraries we incur a minor performance cost.
+A rudimentary benchmark shows that changing the way we consume logging libraries we only incur a minor performance cost.
 
 ```
 go test -bench=. -benchtime=20s -benchmem
@@ -29,10 +29,10 @@ goos: darwin
 goarch: amd64
 pkg: github.com/ahmedalhulaibi/loggy
 cpu: Intel(R) Core(TM) i5-1038NG7 CPU @ 2.00GHz
-BenchmarkLoggy-8        61358341               397.2 ns/op           280 B/op          4 allocs/op
-BenchmarkZap-8          63721450               374.3 ns/op           280 B/op          4 allocs/op
+BenchmarkLoggy-8        60953594               387.3 ns/op           280 B/op          4 allocs/op
+BenchmarkZap-8          62510293               383.9 ns/op           280 B/op          4 allocs/op
 PASS
-ok      github.com/ahmedalhulaibi/loggy 49.254s
+ok      github.com/ahmedalhulaibi/loggy 48.697s
 ```
 
 ```go
@@ -42,6 +42,7 @@ ok      github.com/ahmedalhulaibi/loggy 49.254s
 func BenchmarkLoggy(b *testing.B) {
 	// The Logger allocation is not included in the benchmark time since it is declared once at the beginning of the program
 	// It is expected that in the real world the Logger will be allocated once and reused across the application.
+	// For the purpose of this benchmark, we use a Nop logger since we're measuring the overhead of the Logger implementation.
 	l := New(zap.NewNop().Sugar())
 
 	b.ReportAllocs()
@@ -69,6 +70,7 @@ func BenchmarkLoggy(b *testing.B) {
 // BenchmarkZap benchmarks the usage of the zap logger as it would be in the real world.
 // It is intended to be run with the -benchmem flag.
 func BenchmarkZap(b *testing.B) {
+	// For the purpose of this benchmark, we use a Nop logger since we're measuring the overhead of the Logger implementation.
 	l := zap.NewNop().Sugar()
 
 	b.ReportAllocs()
@@ -81,37 +83,24 @@ func BenchmarkZap(b *testing.B) {
 		// Elsewhere in the codebase we can extract and use the specific request-scoped logger
 		// Typically this extract logic is wrapped in a helper e.g. logger(ctx).Infow but that is not relevant to this benchmark
 		// For the sake of the test, let's assume that we log ten times per request.
-		if maybeLogger, ok := ctx.Value("logger").(*zap.SugaredLogger); ok {
-			maybeLogger.Infow("something goes here", "key", "value")
-		}
-		if maybeLogger, ok := ctx.Value("logger").(*zap.SugaredLogger); ok {
-			maybeLogger.Infow("something goes here", "key", "value")
-		}
-		if maybeLogger, ok := ctx.Value("logger").(*zap.SugaredLogger); ok {
-			maybeLogger.Infow("something goes here", "key", "value")
-		}
-		if maybeLogger, ok := ctx.Value("logger").(*zap.SugaredLogger); ok {
-			maybeLogger.Infow("something goes here", "key", "value")
-		}
-		if maybeLogger, ok := ctx.Value("logger").(*zap.SugaredLogger); ok {
-			maybeLogger.Infow("something goes here", "key", "value")
-		}
-		if maybeLogger, ok := ctx.Value("logger").(*zap.SugaredLogger); ok {
-			maybeLogger.Infow("something goes here", "key", "value")
-		}
-		if maybeLogger, ok := ctx.Value("logger").(*zap.SugaredLogger); ok {
-			maybeLogger.Infow("something goes here", "key", "value")
-		}
-		if maybeLogger, ok := ctx.Value("logger").(*zap.SugaredLogger); ok {
-			maybeLogger.Infow("something goes here", "key", "value")
-		}
-		if maybeLogger, ok := ctx.Value("logger").(*zap.SugaredLogger); ok {
-			maybeLogger.Infow("something goes here", "key", "value")
-		}
-		if maybeLogger, ok := ctx.Value("logger").(*zap.SugaredLogger); ok {
-			maybeLogger.Infow("something goes here", "key", "value")
-		}
+		extractLoggerFromContext(ctx).Infow("something goes here", "key", "value")
+		extractLoggerFromContext(ctx).Infow("something goes here", "key", "value")
+		extractLoggerFromContext(ctx).Infow("something goes here", "key", "value")
+		extractLoggerFromContext(ctx).Infow("something goes here", "key", "value")
+		extractLoggerFromContext(ctx).Infow("something goes here", "key", "value")
+		extractLoggerFromContext(ctx).Infow("something goes here", "key", "value")
+		extractLoggerFromContext(ctx).Infow("something goes here", "key", "value")
+		extractLoggerFromContext(ctx).Infow("something goes here", "key", "value")
+		extractLoggerFromContext(ctx).Infow("something goes here", "key", "value")
+		extractLoggerFromContext(ctx).Infow("something goes here", "key", "value")
 	}
+}
+
+func extractLoggerFromContext(ctx context.Context) *zap.SugaredLogger {
+	if maybeLogger, ok := ctx.Value("logger").(*zap.SugaredLogger); ok {
+		return maybeLogger
+	}
+	return zap.NewNop().Sugar()
 }
 ```
 

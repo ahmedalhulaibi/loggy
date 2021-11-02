@@ -190,6 +190,7 @@ func newZapTestLogger(t *testing.T, output zapcore.WriteSyncer, options ...zap.O
 func BenchmarkLoggy(b *testing.B) {
 	// The Logger allocation is not included in the benchmark time since it is declared once at the beginning of the program
 	// It is expected that in the real world the Logger will be allocated once and reused across the application.
+	// For the purpose of this benchmark, we use a Nop logger since we're measuring the overhead of the Logger implementation.
 	l := New(zap.NewNop().Sugar())
 
 	b.ReportAllocs()
@@ -217,6 +218,7 @@ func BenchmarkLoggy(b *testing.B) {
 // BenchmarkZap benchmarks the usage of the zap logger as it would be in the real world.
 // It is intended to be run with the -benchmem flag.
 func BenchmarkZap(b *testing.B) {
+	// For the purpose of this benchmark, we use a Nop logger since we're measuring the overhead of the Logger implementation.
 	l := zap.NewNop().Sugar()
 
 	b.ReportAllocs()
@@ -229,35 +231,89 @@ func BenchmarkZap(b *testing.B) {
 		// Elsewhere in the codebase we can extract and use the specific request-scoped logger
 		// Typically this extract logic is wrapped in a helper e.g. logger(ctx).Infow but that is not relevant to this benchmark
 		// For the sake of the test, let's assume that we log ten times per request.
-		if maybeLogger, ok := ctx.Value("logger").(*zap.SugaredLogger); ok {
-			maybeLogger.Infow("something goes here", "key", "value")
-		}
-		if maybeLogger, ok := ctx.Value("logger").(*zap.SugaredLogger); ok {
-			maybeLogger.Infow("something goes here", "key", "value")
-		}
-		if maybeLogger, ok := ctx.Value("logger").(*zap.SugaredLogger); ok {
-			maybeLogger.Infow("something goes here", "key", "value")
-		}
-		if maybeLogger, ok := ctx.Value("logger").(*zap.SugaredLogger); ok {
-			maybeLogger.Infow("something goes here", "key", "value")
-		}
-		if maybeLogger, ok := ctx.Value("logger").(*zap.SugaredLogger); ok {
-			maybeLogger.Infow("something goes here", "key", "value")
-		}
-		if maybeLogger, ok := ctx.Value("logger").(*zap.SugaredLogger); ok {
-			maybeLogger.Infow("something goes here", "key", "value")
-		}
-		if maybeLogger, ok := ctx.Value("logger").(*zap.SugaredLogger); ok {
-			maybeLogger.Infow("something goes here", "key", "value")
-		}
-		if maybeLogger, ok := ctx.Value("logger").(*zap.SugaredLogger); ok {
-			maybeLogger.Infow("something goes here", "key", "value")
-		}
-		if maybeLogger, ok := ctx.Value("logger").(*zap.SugaredLogger); ok {
-			maybeLogger.Infow("something goes here", "key", "value")
-		}
-		if maybeLogger, ok := ctx.Value("logger").(*zap.SugaredLogger); ok {
-			maybeLogger.Infow("something goes here", "key", "value")
-		}
+		extractLoggerFromContext(ctx).Infow("something goes here", "key", "value")
+		extractLoggerFromContext(ctx).Infow("something goes here", "key", "value")
+		extractLoggerFromContext(ctx).Infow("something goes here", "key", "value")
+		extractLoggerFromContext(ctx).Infow("something goes here", "key", "value")
+		extractLoggerFromContext(ctx).Infow("something goes here", "key", "value")
+		extractLoggerFromContext(ctx).Infow("something goes here", "key", "value")
+		extractLoggerFromContext(ctx).Infow("something goes here", "key", "value")
+		extractLoggerFromContext(ctx).Infow("something goes here", "key", "value")
+		extractLoggerFromContext(ctx).Infow("something goes here", "key", "value")
+		extractLoggerFromContext(ctx).Infow("something goes here", "key", "value")
+	}
+}
+
+func extractLoggerFromContext(ctx context.Context) *zap.SugaredLogger {
+	if maybeLogger, ok := ctx.Value("logger").(*zap.SugaredLogger); ok {
+		return maybeLogger
+	}
+	return zap.NewNop().Sugar()
+}
+
+// The benchmarks below demonstrate a case where the logger was not injected in context.
+// This is not a typical use case but I have observed it in the real world and it is important to demonstrate the performance impact
+// BenchmarkLoggy benchmarks the recommended usage of the Logger.
+// It is intended to be run with the -benchmem flag.
+// The recommended usage of the Logger is to use the WithFields and Infow, Debugw, etc. methods.
+func BenchmarkLoggy_NoLoggingContext(b *testing.B) {
+	// The Logger allocation is not included in the benchmark time since it is declared once at the beginning of the program
+	// It is expected that in the real world the Logger will be allocated once and reused across the application.
+	// For the purpose of this benchmark, we use a Nop logger since we're measuring the overhead of the Logger implementation.
+	l := New(zap.NewNop().Sugar())
+
+	b.ReportAllocs()
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		// In this benchmark, we don't inject the logger in the context
+		// This can happen in the real world if a middleware is not setup to inject the logger in the context
+		// This may be the case when a service is called directly from the client without any middleware for example
+		ctx := context.Background()
+
+		// Elsewhere in the codebase, the same instance of logger can be used and will extract request-scoped values from context.Context
+		// For the sake of the test, let's assume that we log ten times per request.
+		l.Infow(ctx, "something goes here", "key", "value")
+		l.Infow(ctx, "something goes here", "key", "value")
+		l.Infow(ctx, "something goes here", "key", "value")
+		l.Infow(ctx, "something goes here", "key", "value")
+		l.Infow(ctx, "something goes here", "key", "value")
+		l.Infow(ctx, "something goes here", "key", "value")
+		l.Infow(ctx, "something goes here", "key", "value")
+		l.Infow(ctx, "something goes here", "key", "value")
+		l.Infow(ctx, "something goes here", "key", "value")
+		l.Infow(ctx, "something goes here", "key", "value")
+	}
+}
+
+// The benchmarks below demonstrate a case where the logger was not injected in context.
+// BenchmarkZap benchmarks the usage of the zap logger as it would be in the real world.
+// It is intended to be run with the -benchmem flag.
+func BenchmarkZap_NoLoggingContext(b *testing.B) {
+	// For the purpose of this benchmark, we don't have a logger setup beforehand
+	// l := zap.NewNop().Sugar()
+
+	b.ReportAllocs()
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		// In this benchmark, we don't inject the logger in the context
+		// This can happen in the real world if a middleware is not setup to inject the logger in the context
+		// This may be the case when a service is called directly from the client without any middleware for example
+		ctx := context.Background()
+
+		// Elsewhere in the codebase we can extract and use the specific request-scoped logger
+		// Typically this extract logic is wrapped in a helper e.g. logger(ctx).Infow but that is not relevant to this benchmark
+		// For the sake of the test, let's assume that we log ten times per request.
+		extractLoggerFromContext(ctx).Infow("something goes here", "key", "value")
+		extractLoggerFromContext(ctx).Infow("something goes here", "key", "value")
+		extractLoggerFromContext(ctx).Infow("something goes here", "key", "value")
+		extractLoggerFromContext(ctx).Infow("something goes here", "key", "value")
+		extractLoggerFromContext(ctx).Infow("something goes here", "key", "value")
+		extractLoggerFromContext(ctx).Infow("something goes here", "key", "value")
+		extractLoggerFromContext(ctx).Infow("something goes here", "key", "value")
+		extractLoggerFromContext(ctx).Infow("something goes here", "key", "value")
+		extractLoggerFromContext(ctx).Infow("something goes here", "key", "value")
+		extractLoggerFromContext(ctx).Infow("something goes here", "key", "value")
 	}
 }
