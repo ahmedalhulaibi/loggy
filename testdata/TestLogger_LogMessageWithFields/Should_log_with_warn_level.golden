@@ -1,1 +1,1 @@
-{"level":"warn","msg":"something goes here","request_id":"<request-id-value>","key":"value"}
+{"level":"warn","msg":"something goes here","request_id":"<request-id-value>","instance_id":"<instance-id-value>","key":"value"}

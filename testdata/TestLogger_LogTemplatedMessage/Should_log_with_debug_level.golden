@@ -1,1 +1,1 @@
-{"level":"debug","msg":"something goes here here","request_id":"<request-id-value>"}
+{"level":"debug","msg":"something goes here here","request_id":"<request-id-value>","instance_id":"<instance-id-value>"}
